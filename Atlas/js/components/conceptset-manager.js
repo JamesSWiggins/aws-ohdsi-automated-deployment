@@ -7,13 +7,14 @@ define(['knockout',
 	'webapi/ConceptSetAPI',
 	'conceptsetbuilder/InputTypes/ConceptSet',
 	'atlas-state',
-	'knockout.dataTables.binding',
+	'clipboard',
+	'databindings',
 	'bootstrap',
 	'faceted-datatable',
 	'databindings',
 	'negative-controls',
 	'circe',
-], function (ko, view, config, ohdsiUtil, cdmResultsAPI, vocabularyAPI, conceptSetAPI, ConceptSet, sharedState) {
+], function (ko, view, config, ohdsiUtil, cdmResultsAPI, vocabularyAPI, conceptSetAPI, ConceptSet, sharedState, clipboard) {
 	function conceptsetManager(params) {
 		var self = this;
 		var authApi = params.model.authApi;
@@ -21,6 +22,10 @@ define(['knockout',
 		self.conceptSetName = ko.observable();
 		self.conceptSets = ko.observableArray();
 		self.defaultConceptSetName = "New Concept Set";
+		self.isAuthenticated = authApi.isAuthenticated;
+		self.canReadConceptsets = ko.pureComputed(function () {
+			return (config.userAuthenticationEnabled && self.isAuthenticated() && authApi.isPermittedReadConceptsets()) || !config.userAuthenticationEnabled;
+		});
 		self.selectedConcepts = sharedState.selectedConcepts;
 		self.displayEvidence = ko.pureComputed(function () {
 			return (sharedState.evidenceUrl() && sharedState.evidenceUrl()
@@ -45,7 +50,7 @@ define(['knockout',
 					.length;
 			}
 			return returnVal;
-		})
+		});
 		// Set the default concept set to be the current concept set
 		self.currentConceptSet = ko.observableArray();
 		_.each(self.selectedConcepts(), (conceptSetItem) => {
@@ -536,7 +541,7 @@ define(['knockout',
 			var conceptSetId = conceptSet.id;
 			var qsParams = "";
 			if (conceptSetId > 0) {
-				qsParam = "id=" + conceptSetId + "&";
+				qsParams = "id=" + conceptSetId + "&";
 			}
 			qsParams += "name=" + encodeURIComponent(conceptSet.name())
 			
@@ -545,9 +550,6 @@ define(['knockout',
 				url: urlEncoded,
 				method: 'GET',
 				contentType: 'application/json',
-				headers: {
-					Authorization: authApi.getAuthorizationHeader()
-				},
 				error: authApi.handleAccessDenied,
 				success: function (results) {
 					if (results.length > 0) {
@@ -593,9 +595,6 @@ define(['knockout',
 						method: conceptSet.id ? 'PUT' : 'POST',
 						url: config.api.url + 'conceptset/' + (conceptSet.id || ''),
 						contentType: 'application/json',
-						headers: {
-							Authorization: authApi.getAuthorizationHeader()
-						},
 						data: json,
 						dataType: 'json',
 						error: authApi.handleAccessDenied,
@@ -604,9 +603,6 @@ define(['knockout',
 							$.ajax({
 								method: 'PUT',
 								url: config.api.url + 'conceptset/' + data.id + '/items',
-								headers: {
-									Authorization: authApi.getAuthorizationHeader()
-								},
 								data: JSON.stringify(conceptSetItems),
 								dataType: 'json',
 								contentType: 'application/json',
@@ -1003,9 +999,37 @@ define(['knockout',
 		self.canCreate = ko.computed(function () {
 			return ((authApi.isAuthenticated() && authApi.isPermittedCreateConceptset()) || !config.userAuthenticationEnabled);
 		});
-		self.canDelete = ko.computed(function () {
-			return ((authApi.isAuthenticated() && authApi.isPermittedDeleteConceptset()) || !config.userAuthenticationEnabled);
-		});
+		self.canDelete = self.model.canDeleteCurrentConceptSet;
+		
+		self.copyToClipboard = function(clipboardButtonId, clipboardButtonMessageId) {
+			var currentClipboard = new clipboard(clipboardButtonId);
+
+			currentClipboard.on('success', function (e) {
+				console.log('Copied to clipboard');
+				e.clearSelection();
+				$(clipboardButtonMessageId).fadeIn();
+				setTimeout(function () {
+					$(clipboardButtonMessageId).fadeOut();
+				}, 1500);
+			});
+
+			currentClipboard.on('error', function (e) {
+				console.log('Error copying to clipboard');
+				console.log(e);
+			});			
+		}
+		
+		self.copyExpressionToClipboard = function() {
+			self.copyToClipboard('#btnCopyExpressionClipboard', '#copyExpressionToClipboardMessage');
+		}
+		
+		self.copyIdentifierListToClipboard = function() {
+			self.copyToClipboard('#btnCopyIdentifierListClipboard', '#copyIdentifierListMessage');
+		}
+		
+		self.copyIncludedConceptIdentifierListToClipboard = function() {
+			self.copyToClipboard('#btnCopyIncludedConceptIdentifierListClipboard', '#copyIncludedConceptIdentifierListMessage');
+		}
 	}
 
 	var component = {

@@ -5,6 +5,7 @@ define(function (require, exports) {
 	var sourceAPI = require('webapi/SourceAPI');
 	var sharedState = require('atlas-state');
 	var numeral = require('numeral');
+	var authAPI = require('webapi/AuthAPI');
 
 	var loadedPromise = $.Deferred();
 	loadedPromise.resolve();
@@ -14,6 +15,10 @@ define(function (require, exports) {
 	var domains = [];
 
 	sourceAPI.getSources().then(function (sources) {
+		if (sources.length == 0) {
+			sharedState.appInitializationStatus('no-sources-available');
+			return;
+		}
 		// find the source which has a Vocabulary Daimon with priority = 1
 		var prioritySources = sources.filter(function (source) {
 			return source.daimons.filter(function (daimon) {
@@ -120,7 +125,8 @@ define(function (require, exports) {
 
 	function getConcept(id) {
 		var getConceptPromise = $.ajax({
-			url: config.webAPIRoot + 'vocabulary/' + defaultSource.sourceKey + '/concept/' + id
+			url: config.webAPIRoot + 'vocabulary/' + defaultSource.sourceKey + '/concept/' + id,
+			error: authAPI.handleAccessDenied,
 		});
 
 		return getConceptPromise;
@@ -135,7 +141,8 @@ define(function (require, exports) {
 			repositoryUrl = config.webAPIRoot + 'conceptset/';
 
 		var getConceptSetListPromise = $.ajax({
-			url: repositoryUrl
+			url: repositoryUrl,
+			error: authAPI.handleAccessDenied,
 		});
 
 		return getConceptSetListPromise;
@@ -152,7 +159,8 @@ define(function (require, exports) {
 		repositoryUrl += id + '/expression';
 
 		var getConceptSetPromise = $.ajax({
-			url: repositoryUrl
+			url: repositoryUrl,
+			error: authAPI.handleAccessDenied,
 		});
 
 		return getConceptSetPromise;
@@ -166,8 +174,9 @@ define(function (require, exports) {
 			url: repositoryUrl,
 			data: JSON.stringify(expression),
 			method: 'POST',
-			contentType: 'application/json'
-		});
+			contentType: 'application/json',
+			error: authAPI.handleAccessDenied,
+	});
 
 		return resolveConceptSetExpressionPromise;
 	}
@@ -179,8 +188,9 @@ define(function (require, exports) {
 			url: repositoryUrl,
 			data: JSON.stringify(expression),
 			method: 'POST',
-			contentType: 'application/json'
-		});
+			contentType: 'application/json',
+			error: authAPI.handleAccessDenied,
+	});
 
 		return conceptSetExpressionSQLPromise;
 	}
@@ -192,8 +202,9 @@ define(function (require, exports) {
 			url: repositoryUrl,
 			data: JSON.stringify(identifiers),
 			method: 'POST',
-			contentType: 'application/json'
-		});
+			contentType: 'application/json',
+			error: authAPI.handleAccessDenied,
+	});
 
 		return getConceptsByIdPromise;
 	}
@@ -205,8 +216,9 @@ define(function (require, exports) {
 			url: repositoryUrl,
 			data: JSON.stringify(identifiers),
 			method: 'POST',
-			contentType: 'application/json'
-		});
+			contentType: 'application/json',
+			error: authAPI.handleAccessDenied,
+	});
 
 		return getMappedConceptsByIdPromise;
 	}
@@ -218,8 +230,9 @@ define(function (require, exports) {
 			url: repositoryUrl,
 			data: JSON.stringify(conceptSetItems),
 			method: 'POST',
-			contentType: 'application/json'
-		});
+			contentType: 'application/json',
+			error: authAPI.handleAccessDenied,
+	});
 
 		return getOptimizedConceptSetPromise;
 	}
@@ -231,8 +244,9 @@ define(function (require, exports) {
 			url: repositoryUrl,
 			data: JSON.stringify(compareTargets),
 			method: 'POST',
-			contentType: 'application/json'
-		});
+			contentType: 'application/json',
+			error: authAPI.handleAccessDenied,
+	});
 
 		return getComparedConceptSetPromise;
 	}
