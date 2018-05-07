@@ -26,7 +26,6 @@ echo "ACCT_ID=" $ACCT_ID
 echo "BUCKET_NAME=" $BUCKET_NAME
 echo "DATABASE_PASSWORD=" $DATABASE_PASSWORD
 echo "RS_ROLE_ARN=" $RS_ROLE_ARN
-echo "RSTUDIO_TARGET_GROUP_ARN=" $RSTUDIO_TARGET_GROUP_ARN
 export AWS_DEFAULT_REGION=$(echo $EB_ENDPOINT | cut -d . -f2)
 
 #Deploy the OMOP CDM Schema to Redshift
@@ -59,19 +58,10 @@ export PGPASSWORD="admin1"
 psql -d OHDSI --host=$RDS_ENDPOINT --port=5432 -U ohdsi_admin_user -a -f postgres_init_sources.sql
 aws elasticbeanstalk restart-app-server --environment-name $(echo $EB_ENDPOINT | cut -d . -f1)
 
-#Optionally connect R-Studio Instance to the load balancer
-if [ "$RSTUDIO_TARGET_GROUP_ARN" != "none" ]; then
-    export EB_ENVIRONMENT=$(echo $EB_ENDPOINT | cut -d . -f1)
-    export EB_LB=$(aws elasticbeanstalk describe-environment-resources --environment-name $EB_ENVIRONMENT --query EnvironmentResources.LoadBalancers --output text)
-    export EB_LB_LISTENER=$(aws elbv2 describe-listeners --load-balancer-arn $EB_LB --query 'Listeners[0].ListenerArn' --output text)
-
-    aws elbv2 create-rule --listener-arn $EB_LB_LISTENER --priority 4 --conditions Field=host-header,Values='rstudio.*' --actions Type=forward,TargetGroupArn=$RSTUDIO_TARGET_GROUP_ARN
-fi
 
 #Run Achilles R script to enabled Data Source visualization
 sed -i 's!REDSHIFT_ENDPOINT!'$REDSHIFT_ENDPOINT'!' achilles.r
 sed -i 's!DATABASE_PASSWORD!'$DATABASE_PASSWORD'!' achilles.r
-
 date > /tmp/rstudio_sparklyr_emr5.tmp
 export MAKE='make -j 8'
 sudo yum install -y xorg-x11-xauth.x86_64 xorg-x11-server-utils.x86_64 xterm libXt libX11-devel libXt-devel libcurl-devel git compat-gmp4 compat-libffi5 openssl-devel
@@ -113,5 +103,5 @@ sudo sh -c "source /etc/profile"
 
 # fix java binding - R and packages have to be compiled with the same java version as hadoop
 sudo R CMD javareconf
-
-Rscript /aws-ohdsi-rstudio-automated-deployment/achilles.r 
+cd /aws-ohdsi-automated-deployment
+Rscript achilles.r 
