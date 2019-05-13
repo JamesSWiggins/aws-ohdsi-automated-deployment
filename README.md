@@ -33,7 +33,12 @@ Quickly deploy a single instance implementation of OHDSI tools and sample data f
 | CMS DeSynPUF | 100k persons |
 | Synthea | 1k persons |
 
+## OHDSI-in-a-Box deployment instructions
 
+1. Begin the deployment process by clicking the **Launch Stack** button at the top of this page.  This will take you to the [CloudFormation Manage Console](https://console.aws.amazon.com/cloudformation/) and specify the OHDSI Cloudformation template URL (https://s3.amazonaws.com/ohdsi-rstudio/ohdsi-in-a-box.yaml).  In the top-right corner of the console, choose the AWS Region in which you'd like to deploy the OHDSI environment, and then click **Next**. 
+![alt-text](https://github.com/OHDSI/OHDSIonAWS/blob/master/images/ohdsi_launch_cfn_template.gif "CFN Select Template")
+
+2. The next screen will take in all of the parameters for your OHDSI environment.  A description is provided for each parameter to help explain its function, but following is also a detailed description of how to use each parameter.  At the top, provide a unique **Stack Name**.   
 
 ## License
 
